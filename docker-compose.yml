@@ -1,0 +1,9 @@
+services:
+  xss-encoder:
+    build: .
+    ports:
+      - "127.0.0.1:5000:5000"
+    container_name: xss-encoder-app
+    restart: unless-stopped
+    command: gunicorn -b 0.0.0.0:5000 app:app
+
