@@ -1,39 +1,50 @@
 # 🧪 XEncode
 
-**XEncode** is a simple but powerful web tool designed for security researchers and bug bounty hunters to **obfuscate XSS payloads** using various encoding techniques — ideal for **WAF/IDS bypass testing** and input filter evasion.
+**XEncode** is a payload obfuscation tool for security researchers and bug bounty hunters. It provides real-time, browser-based encoding of payloads for **XSS**, **SSRF**, and other filter-evasion techniques — all with a clean UI and secure backend.
 
 ---
 
 ## ✨ Features
 
-- 🧠 **Real-time encoding** as you type
-- 🔁 **Throttled updates** for smooth UX
-- 🧩 **Multiple encodings**:
-  - Full-width Unicode encoding
-  - HTML entity encoding
-  - Unicode escape encoding (`\uXXXX`)
-  - Full-width + UTF-8 URL encoding
-- 📋 **Copy to clipboard** (per field or all at once)
-- 🖼️ Clean and responsive UI with scroll support for large payloads
-- 🔒 Secure localhost-only deployment via Apache/Docker
+- 🧠 **Real-time encoding** with input throttling
+- 🔁 Toggle between **XSS** and **SSRF** encoding modes
+- 📋 **Copy buttons** for each encoding and a global "Copy All"
 
 ---
 
-## 🛠️ Encoding Techniques
+## 🧩 Encoding Techniques
 
-| Type | Example |
-|------|---------|
-| **Full-width** | `<` → `＜` |
-| **HTML Entities** | `<` → `&lt;` |
-| **Unicode Escape** | `<` → `\u003c` |
-| **UTF-8 URL** | `＜` → `%EF%BC%9C` |
+### 🔹 XSS Mode
+| Type                        | Example             |
+|-----------------------------|---------------------|
+| Full-width Unicode          | `<` → `＜`          |
+| HTML Entities               | `<` → `&lt;`        |
+| Unicode Escape              | `<` → `\u003c`     |
+| UTF-8 URL (Full-width)      | `＜` → `%EF%BC%9C`   |
+
+### 🔸 SSRF Mode
+Includes obfuscation variants that can bypass filters, regexes, or normalization-based checks:
+
+- **Math-based Unicode styles**: Sans, Bold, Monospace, Double-struck
+- **Visual Trickery**:
+  - Zero-width injectors (U+200B)
+  - RTL override (U+202E)
+  - Unicode combining marks (Zalgo-style)
+- **Unicode Lookalikes**:
+  - Homoglyph swaps (Latin → Cyrillic)
+  - Faux Cyrillic, Small Caps
+- **Numeric Manipulation**:
+  - Circled digits (⓪⑨)
+  - Full-width digits (０１２)
+  - Subscript / Superscript
+- **Filter Confusion**:
+  - Unicode replacement char (�, U+FFFD) injection/appending
 
 ---
 
-## 🚀 Usage
+## 🎯 Usage
 
-### 🧪 Locally (Python)
-
+### 🔬 Local (Python)
 ```bash
 pip install flask
 python app.py
@@ -41,74 +52,67 @@ python app.py
 ```
 
 ### 🐳 Docker
-
 ```bash
 docker-compose up --build
-# Or bind securely to localhost via 127.0.0.1:5000
+# Exposed securely at http://127.0.0.1:5000
 ```
 
-### 🔐 Production Behind Apache
-
-Use Apache reverse proxy to expose it over HTTPS:
+### 🔐 Production (Apache Reverse Proxy)
 ```apache
 <VirtualHost *:443>
-    ServerName encoder.yourdomain.com
+    ServerName encoder.example.com
     ProxyPass / http://127.0.0.1:5000/
     ProxyPassReverse / http://127.0.0.1:5000/
     SSLEngine on
-    SSLCertificateFile /etc/ssl/certs/yourcert.pem
-    SSLCertificateKeyFile /etc/ssl/private/yourkey.pem
+    SSLCertificateFile /path/fullchain.pem
+    SSLCertificateKeyFile /path/key.pem
 </VirtualHost>
 ```
 
 ---
 
-## 📦 Deployment Structure
+## 📦 Project Structure
 
 ```
-xss_encoder_webapp/
-├── app.py                  # Flask app
-├── Dockerfile              # Lightweight Python image
-├── docker-compose.yml      # Run and expose app
-└── templates/
-    └── index.html          # UI with JS/CSS/UX polish
+XEncode/
+├── app.py                 # Flask backend
+├── templates/
+│   └── index.html         # UI + dynamic rendering
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
 ```
 
 ---
 
-## 🎯 Example Payload
+## 🔍 Example Payloads
 
-Paste your raw payload:
-
+Input:
 ```html
 <script>alert(1)</script>
 ```
 
-And instantly get:
-
-- Full-width:
-  ```
-  ＜ｓｃｒｉｐｔ＞ａｌｅｒｔ（１）＜／ｓｃｒｉｐｔ＞
-  ```
-- HTML entity:
-  ```
-  &lt;script&gt;alert(1)&lt;/script&gt;
-  ```
-- Unicode escape:
-  ```
-  \u003c\u0073\u0063\u0072\u0069...
-  ```
+Encodings:
+- **Full-width**: `＜ｓｃｒｉｐｔ＞ａｌｅｒｔ（１）＜／ｓｃｒｉｐｔ＞`
+- **HTML Entity**: `&lt;script&gt;alert(1)&lt;/script&gt;`
+- **Unicode Escape**: `\u003c\u0073\u0063...`
 
 ---
 
-## 💡 Use Cases
+## 🧠 Use Cases
 
-- Bypassing naive HTML filters
-- Testing XSS payload handling
-- Evading blacklists and regex-based WAFs
+- Bypassing XSS filters and input sanitizers
+- SSRF WAF/regex filter bypasses
+- Red team payload mutation
+- Fuzzing backend normalization behaviors
+- Filter evasion in CTFs or bug bounty targets
 
 ---
 
 ## 📜 License
 
-MIT — use, modify, and share freely. Attribution appreciated.
+MIT — free for all uses. Contributions and suggestions are welcome!
+
+## Credits
+
+Built by a hacker for hackers by gokuKaioKen
