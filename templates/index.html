@@ -43,6 +43,7 @@
 <select id="modeSelector" onchange="encodePayload()">
   <option value="xss">XSS Mode</option>
   <option value="ssrf">SSRF Obfuscation Mode</option>
+  <option value="ip">IP Obfuscation Mode</option>
 </select>
 
 <textarea id="payload" placeholder="Paste your payload here..." rows="5"></textarea>
@@ -61,6 +62,11 @@
     function encodePayload() {
         const payload = document.getElementById('payload').value;
         const mode = document.getElementById('modeSelector').value;
+
+        if (mode === 'ip') {
+            generateAdvancedIpEncodings(payload);
+            return;
+        }
 
         fetch('/encode', {
             method: 'POST',
@@ -92,7 +98,7 @@
                 const pre = document.createElement('pre');
                 pre.id = name;
                 pre.className = 'encoded-text';
-                pre.textContent = value; // ✅ SAFE rendering
+                pre.textContent = value;
 
                 header.appendChild(title);
                 header.appendChild(copyBtn);
@@ -104,6 +110,65 @@
         .catch(() => {
             document.getElementById('results').innerHTML = '<p class="loading">Error encoding</p>';
         });
+    }
+
+    function generateAdvancedIpEncodings(ip) {
+        const resultsDiv = document.getElementById("results");
+        if (!ip || !/^\d+\.\d+\.\d+\.\d+$/.test(ip)) {
+            resultsDiv.innerHTML = '<p class="loading">Invalid IP address</p>';
+            return;
+        }
+
+        const [o1, o2, o3, o4] = ip.split('.').map(Number);
+        const dword = (BigInt(o1) << 24n) | (BigInt(o2) << 16n) | (BigInt(o3) << 8n) | BigInt(o4);
+
+        const hexv1 = `http://${[o1, o2, o3, o4].map(n => '0x' + n.toString(16)).join('.')}`;
+        const hexv2 = `http://0x${[o1, o2, o3, o4].map(n => n.toString(16).padStart(2, '0')).join('')}`;
+        const hexv3 = `http://0x${o1.toString(16)}.0x${[o2, o3, o4].map(n => n.toString(16).padStart(2, '0')).join('')}`;
+        const hexv4 = `http://0x${o1.toString(16)}.0x${o2.toString(16)}.0x${(o3 << 8 | o4).toString(16).padStart(4, '0')}`
+
+        const octalv1 = `http://${[o1, o2, o3, o4].map(n => '0' + n.toString(8)).join('.')}`;
+        const octalv2 = `http://${[o1, o2, o3, o4].map(n => n.toString(8).padStart(4, '0')).join('.')}`;
+        const octalv3 = `http://0${dword.toString(8)}`;
+
+        const percentv1 = `http://${[...ip].map(c => '%' + c.charCodeAt(0).toString(16)).join('')}`;
+
+        const mixedv1 = `http://${o1}.0x${o2.toString(16)}.${'0'.repeat(3) + o3.toString(8)}.0x${o4.toString(16)}`;
+
+        const unicode = 'http://' + ip.split('.').map(seg =>
+            seg.split('').map(n => n !== '0' ? String.fromCodePoint(0x245F + parseInt(n)) : String.fromCodePoint(0x24EA)).join('')
+        ).join('\uFF0E');
+
+        const variants = {
+            "Dotted Decimal": `http://${ip}`,
+            "Class B": `http://${o1}.${o2}.${o3 * 256 + o4}`,
+            "Class A": `http://${o1}.${o2 * 256 ** 2 + o3 * 256 + o4}`,
+            "DWORD": `http://${dword}`,
+            "Hex (Dotted)": hexv1,
+            "Hex (Single)": hexv2,
+            "Hex (Hybrid1)": hexv3,
+            "Hex (Hybrid2)": hexv4,
+            "Dotted Octal": octalv1,
+            "Padded Octal": octalv2,
+            "Packed Octal": octalv3,
+            "Percent-Encoded": percentv1,
+            "Mixed Encoding": mixedv1,
+            "Unicode (Circled)": unicode
+        };
+
+        let html = '';
+        for (const [name, value] of Object.entries(variants)) {
+            html += `
+              <div class="result-block">
+                <div class="result-header">
+                  <h3>${name}:</h3>
+                  <button type="button" class="copy-btn" onclick="navigator.clipboard.writeText('${value}')">Copy</button>
+                </div>
+                <pre class="encoded-text">${value}</pre>
+              </div>
+            `;
+        }
+        resultsDiv.innerHTML = html;
     }
 
     document.addEventListener('DOMContentLoaded', function() {

@@ -1,50 +1,65 @@
 # 🧪 XEncode
 
-**XEncode** is a payload obfuscation tool for security researchers and bug bounty hunters. It provides real-time, browser-based encoding of payloads for **XSS**, **SSRF**, and other filter-evasion techniques — all with a clean UI and secure backend.
+**XEncode** is a powerful web-based payload obfuscation tool for security researchers, red teamers, and bug bounty hunters. It helps bypass WAFs and input filters by transforming XSS and SSRF payloads using exotic and lesser-known Unicode, encoding, and IP obfuscation tricks.
 
 ---
 
 ## ✨ Features
 
-- 🧠 **Real-time encoding** with input throttling
-- 🔁 Toggle between **XSS** and **SSRF** encoding modes
-- 📋 **Copy buttons** for each encoding and a global "Copy All"
+- 🧠 **Real-time encoding** as you type
+- 💣 **Three distinct modes**:
+  - `XSS Mode` — Obfuscate HTML/script payloads
+  - `SSRF Mode` — Evade SSRF filters with exotic Unicode and RTL tricks
+  - `IP Obfuscation Mode` — Generate all known valid representations of an IP
+- 📋 **Per-field copy** and **Copy ALL** support
 
 ---
 
-## 🧩 Encoding Techniques
+## 🛠️ Encoding Techniques
 
-### 🔹 XSS Mode
-| Type                        | Example             |
-|-----------------------------|---------------------|
-| Full-width Unicode          | `<` → `＜`          |
-| HTML Entities               | `<` → `&lt;`        |
-| Unicode Escape              | `<` → `\u003c`     |
-| UTF-8 URL (Full-width)      | `＜` → `%EF%BC%9C`   |
+### XSS Mode
+| Type                  | Example                      |
+|-----------------------|------------------------------|
+| Full-width Unicode    | `<` → `＜`                    |
+| HTML Entities         | `<` → `&lt;`                   |
+| Unicode Escape        | `<` → `\u003c`               |
+| UTF-8 URL (Fullwidth) | `＜` → `%EF%BC%9C`           |
 
-### 🔸 SSRF Mode
-Includes obfuscation variants that can bypass filters, regexes, or normalization-based checks:
+### SSRF Mode
+Includes exotic formats and Unicode abuse:
+- Unicode homoglyph swap
+- ZWSP insertion
+- Combining marks (Zalgo)
+- RTL override injection
+- Math / Fraktur / Sans / Double-struck / Superscript / Subscript fonts
+- Circled, Parenthesized, Faux-Cyrillic encodings
+- `U+FFFD` replacement character tricks
 
-- **Math-based Unicode styles**: Sans, Bold, Monospace, Double-struck
-- **Visual Trickery**:
-  - Zero-width injectors (U+200B)
-  - RTL override (U+202E)
-  - Unicode combining marks (Zalgo-style)
-- **Unicode Lookalikes**:
-  - Homoglyph swaps (Latin → Cyrillic)
-  - Faux Cyrillic, Small Caps
-- **Numeric Manipulation**:
-  - Circled digits (⓪⑨)
-  - Full-width digits (０１２)
-  - Subscript / Superscript
-- **Filter Confusion**:
-  - Unicode replacement char (�, U+FFFD) injection/appending
+### IP Obfuscation Mode
+Generates all valid representations of an IP address like:
+
+| Variant               | Output Example                |
+|-----------------------|-------------------------------|
+| Decimal               | `http://192.168.1.1`          |
+| Class B               | `http://192.168.257`          |
+| Class A               | `http://192.11010305`         |
+| DWORD (unsigned)      | `http://3232235777`           |
+| Dotted Hex            | `http://0xc0.0xa8.0x1.0x1`     |
+| Packed Hex            | `http://0xc0a80101`           |
+| Hybrid Hex 1          | `http://0xc0.0xa80101`         |
+| Hybrid Hex 2          | `http://0xc0.0xa8.0x0101`      |
+| Dotted Octal          | `http://0300.0250.01.01`       |
+| Padded Octal          | `http://0300.0250.0001.0001`   |
+| Packed Octal          | `http://030052000401`         |
+| Percent Encoding      | `http://%31%39%32...`          |
+| Mixed Hex/Octal       | `http://192.0xa8.0001.0x1`     |
+| Unicode (Circled)     | `http://①⑨②．①⑥⑧．①．①`     |
 
 ---
 
-## 🎯 Usage
+## 🚀 Usage
 
-### 🔬 Local (Python)
+### 🧪 Locally (Python)
 ```bash
 pip install flask
 python app.py
@@ -54,64 +69,60 @@ python app.py
 ### 🐳 Docker
 ```bash
 docker-compose up --build
-# Exposed securely at http://127.0.0.1:5000
+# Or bind securely to localhost via 127.0.0.1:5000
 ```
 
-### 🔐 Production (Apache Reverse Proxy)
+### 🔐 Behind Apache
+Use Apache reverse proxy to expose via HTTPS:
 ```apache
 <VirtualHost *:443>
-    ServerName encoder.example.com
+    ServerName encoder.yourdomain.com
     ProxyPass / http://127.0.0.1:5000/
     ProxyPassReverse / http://127.0.0.1:5000/
     SSLEngine on
-    SSLCertificateFile /path/fullchain.pem
-    SSLCertificateKeyFile /path/key.pem
+    SSLCertificateFile /etc/ssl/certs/yourcert.pem
+    SSLCertificateKeyFile /etc/ssl/private/yourkey.pem
 </VirtualHost>
 ```
 
 ---
 
 ## 📦 Project Structure
-
 ```
-XEncode/
-├── app.py                 # Flask backend
-├── templates/
-│   └── index.html         # UI + dynamic rendering
+xencode/
+├── app.py              # Flask backend with encoder logic
 ├── Dockerfile
 ├── docker-compose.yml
-└── README.md
+└── templates/
+    └── index.html      # Frontend UI with dynamic logic
 ```
 
 ---
 
-## 🔍 Example Payloads
-
-Input:
+## 🎯 Example
+Paste your payload:
 ```html
 <script>alert(1)</script>
 ```
 
-Encodings:
-- **Full-width**: `＜ｓｃｒｉｐｔ＞ａｌｅｒｔ（１）＜／ｓｃｒｉｐｔ＞`
-- **HTML Entity**: `&lt;script&gt;alert(1)&lt;/script&gt;`
-- **Unicode Escape**: `\u003c\u0073\u0063...`
+And instantly get:
+- `＜ｓｃｒｉｐｔ＞ａｌｅｒｔ（１）＜／ｓｃｒｉｐｔ＞`
+- `&lt;script&gt;alert(1)&lt;/script&gt;`
+- `\u003c\u0073\u0063\u0072...`
+- `%EF%BC%9C%EF%BD%93%EF%BD...`
 
 ---
 
-## 🧠 Use Cases
-
-- Bypassing XSS filters and input sanitizers
-- SSRF WAF/regex filter bypasses
-- Red team payload mutation
-- Fuzzing backend normalization behaviors
-- Filter evasion in CTFs or bug bounty targets
+## 💡 Use Cases
+- Obfuscating payloads for WAF/IDS testing
+- XSS/SSRF encoding permutations
+- Input filter bypass fuzzing
+- Unicode transformation attack research
 
 ---
 
 ## 📜 License
-
-MIT — free for all uses. Contributions and suggestions are welcome!
+MIT — free to use, improve, and distribute. Attribution appreciated.
 
 ## Credits
 
