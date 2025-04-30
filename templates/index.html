@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>XEncode</title>
+    <title>XEncode - XSS and SSRF Payload Encoder</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; background: #f9f9f9; color: #333; }
-        h1 { text-align: center; margin-bottom: 30px; }
+        h1 { text-align: center; margin-bottom: 20px; }
+        select { margin-bottom: 20px; padding: 10px; font-size: 16px; }
         textarea {
             width: 100%; padding: 15px; font-size: 16px; margin-bottom: 20px;
             border-radius: 8px; border: 1px solid #ccc; background: #fff; resize: vertical;
@@ -37,43 +38,18 @@
 </head>
 <body>
 
-<h1>XSS Payload Encoder</h1>
+<h1>XEncode</h1>
+
+<select id="modeSelector" onchange="encodePayload()">
+  <option value="xss">XSS Mode</option>
+  <option value="ssrf">SSRF Obfuscation Mode</option>
+</select>
 
 <textarea id="payload" placeholder="Paste your payload here..." rows="5"></textarea>
 
 <hr>
 
-<div class="result-block">
-    <div class="result-header">
-        <h3>Full-Width Encoding:</h3>
-        <button type="button" class="copy-btn" onclick="copyText('fullwidth')">Copy</button>
-    </div>
-    <pre id="fullwidth" class="encoded-text loading">Waiting for input...</pre>
-</div>
-
-<div class="result-block">
-    <div class="result-header">
-        <h3>HTML Entity Encoding:</h3>
-        <button type="button" class="copy-btn" onclick="copyText('html_entity')">Copy</button>
-    </div>
-    <pre id="html_entity" class="encoded-text loading">Waiting for input...</pre>
-</div>
-
-<div class="result-block">
-    <div class="result-header">
-        <h3>Unicode Escape Encoding:</h3>
-        <button type="button" class="copy-btn" onclick="copyText('unicode_escape')">Copy</button>
-    </div>
-    <pre id="unicode_escape" class="encoded-text loading">Waiting for input...</pre>
-</div>
-
-<div class="result-block">
-    <div class="result-header">
-        <h3>Full-Width + UTF8 URL Encoding (Unicode Normalization):</h3>
-        <button type="button" class="copy-btn" onclick="copyText('utf8_urlencode')">Copy</button>
-    </div>
-    <pre id="utf8_urlencode" class="encoded-text loading">Waiting for input...</pre>
-</div>
+<div id="results"></div>
 
 <div style="text-align: center;">
     <button type="button" onclick="copyAll()">Copy ALL Encodings</button>
@@ -84,30 +60,49 @@
 
     function encodePayload() {
         const payload = document.getElementById('payload').value;
-
-        document.querySelectorAll('.encoded-text').forEach(el => {
-            el.innerText = 'Encoding...';
-            el.classList.add('loading');
-        });
+        const mode = document.getElementById('modeSelector').value;
 
         fetch('/encode', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'payload=' + encodeURIComponent(payload)
+            body: 'payload=' + encodeURIComponent(payload) + '&mode=' + encodeURIComponent(mode)
         })
         .then(response => response.json())
         .then(data => {
-            document.getElementById('fullwidth').innerText = data.fullwidth;
-            document.getElementById('html_entity').innerText = data.html_entity;
-            document.getElementById('unicode_escape').innerText = data.unicode_escape;
-            document.getElementById('utf8_urlencode').innerText = data.utf8_urlencode;
-            document.querySelectorAll('.encoded-text').forEach(el => el.classList.remove('loading'));
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            for (const [name, value] of Object.entries(data)) {
+                const block = document.createElement('div');
+                block.className = 'result-block';
+
+                const header = document.createElement('div');
+                header.className = 'result-header';
+
+                const title = document.createElement('h3');
+                title.textContent = name;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = 'Copy';
+                copyBtn.className = 'copy-btn';
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(value).then(() => alert('Copied!'));
+                };
+
+                const pre = document.createElement('pre');
+                pre.id = name;
+                pre.className = 'encoded-text';
+                pre.textContent = value; // ✅ SAFE rendering
+
+                header.appendChild(title);
+                header.appendChild(copyBtn);
+                block.appendChild(header);
+                block.appendChild(pre);
+                resultsDiv.appendChild(block);
+            }
         })
         .catch(() => {
-            document.querySelectorAll('.encoded-text').forEach(el => {
-                el.innerText = 'Error encoding';
-                el.classList.remove('loading');
-            });
+            document.getElementById('results').innerHTML = '<p class="loading">Error encoding</p>';
         });
     }
 
@@ -117,6 +112,7 @@
             clearTimeout(timer);
             timer = setTimeout(encodePayload, 300);
         });
+        encodePayload();
     });
 
     function copyText(id) {
