@@ -26,14 +26,28 @@
 | UTF-8 URL (Fullwidth) | `＜` → `%EF%BC%9C`           |
 
 ### SSRF Mode
-Includes exotic formats and Unicode abuse:
-- Unicode homoglyph swap
-- ZWSP insertion
-- Combining marks (Zalgo)
-- RTL override injection
-- Math / Fraktur / Sans / Double-struck / Superscript / Subscript fonts
-- Circled, Parenthesized, Faux-Cyrillic encodings
-- `U+FFFD` replacement character tricks
+| Encoding                           | Example                                 |
+|------------------------------------|-----------------------------------------|
+| Math Double-Struck                 | 𝟠𝟙.𝟜.𝟙𝟚𝟜.𝟙𝟘                           |
+| Math Monospace                     | 𝟾𝟷.𝟺.𝟷𝟸𝟺.𝟷𝟶                           |
+| Math Sans                          | 𝟪𝟣.𝟦.𝟣𝟤𝟦.𝟣𝟢                           |
+| Math Sans Bold                     | 𝟴𝟭.𝟰.𝟭𝟮𝟰.𝟭𝟬                           |
+| Circled (alpha+num)               | ⓲⓫.⓮.⓫⓬⓮.⓫⓪                           |
+| Circled with ⨀ Separator           | ⑧①⨀④⨀①②④⨀①⓪                          |
+| Circled with Fullwidth Dots       | ①⑨②．①⑥⑧．①．①                         |
+| Circled (neg ending ⓿)            | 81.4.124.1⓿                             |
+| Rock Dots                         | 81∵4∵124∵10                             |
+| Parenthesized Digits             | ⑻⑴.⑷.⑴⑵⑷.⑴⓪                          |
+| Subscript Digits                 | ₈₁.₄.₁₂₄.₁₀                           |
+| Superscript Digits               | ⁸¹.⁴.¹²⁴.¹⁰                           |
+| Small Caps                       | ꜱᴇʀᴠᴇʀᴏʙᴊᴇᴄᴛ                         |
+| Faux Cyrillic                   | ЅΣЯѴΣЯФБЈΣCТ                           |
+| Homoglyph Swap                  | ѕеrvеrіntеrnаl                         |
+| Zalgo / Combining Marks          | 8̀1́.̂4̀.́1̂2̀4́.̂1̀0́                   |
+| RTL Override                     | ‮10.124.4.81                       |
+| Zero Width (ZWSP)               | 8​1​.​4​.​1​2​4​.​1​0                   |
+| Replacement Char Injected       | 8�1�.�4�.�1�2�4�.�1�0                  |
+| Replacement Char Appended       | 81.4.124.10�                           |
 
 ### IP Obfuscation Mode
 Generates all valid representations of an IP address like:
