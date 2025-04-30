@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+import re
 import html
 import urllib.parse
 
@@ -70,6 +71,48 @@ def to_circled_negative(text):
     base_alpha = {chr(i): chr(0x24B6 + i - 65) for i in range(65, 91)}
     base_alpha.update({chr(i): chr(0x24D0 + i - 97) for i in range(97, 123)})
     return ''.join(base_digit.get(c, base_alpha.get(c, c)) for c in text)
+
+def to_circled_with_separator(text):
+    parts = text.split('.')
+    if not all(part.isdigit() for part in parts):
+        return text
+
+    def circle_digits(segment):
+        return ''.join(
+            '\u24EA' if d == '0' else chr(0x2460 + int(d) - 1) for d in segment
+        )
+
+    return '⨀'.join(circle_digits(part) for part in parts)
+
+def to_circled_negative_final_zero(text):
+    parts = text.split('.')
+    final = parts[-1]
+    return '.'.join(parts[:-1]) + '.' + ''.join(chr(0x24FF) if c == '0' else c for c in final)
+
+def to_circled_with_fullwidth_dots(text):
+    """Encodes IPs using circled digits with fullwidth dots (．). Returns original if not a valid IPv4 address."""
+    parts = text.split('.')
+    if len(parts) != 4 or not all(part.isdigit() for part in parts):
+        return text
+
+    def circled_segment(segment):
+        result = ''
+        for d in segment:
+            if d == '0':
+                result += '\u24EA'  # circled zero
+            elif d in '123456789':
+                result += chr(0x245F + int(d))  # circled 1–9
+            else:
+                return segment  # fallback on bad char
+        return result
+
+    try:
+        return '．'.join(circled_segment(part) for part in parts)
+    except Exception:
+        return text
+
+def to_rock_dots(text):
+    return '∵'.join(text.split('.'))
 
 def to_parenthesized_digits(text):
     digit_map = {
@@ -170,6 +213,10 @@ def encode():
                 'Math Sans': to_math_sans(payload),
                 'Math Sans Bold': to_math_sans_bold(payload),
                 'Circled (alpha+num)': to_circled_negative(payload),
+                'Circled with ⨀': to_circled_with_separator(payload),
+                'Circled (neg ending ⓿)': to_circled_negative_final_zero(payload),
+                'Circled with Fullwidth Dots (Only Valid for IPs)': to_circled_with_fullwidth_dots(payload),
+                'Rock Dots': to_rock_dots(payload),
                 'Parenthesized (alpha+num)': to_parenthesized_digits(payload),
                 'Subscript (alpha+num)': to_subscript(payload),
                 'Superscript (alpha+num)': to_superscript(payload),
