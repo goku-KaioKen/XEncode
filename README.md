@@ -12,18 +12,20 @@
   - `SSRF Mode` — Evade SSRF filters with exotic Unicode and RTL tricks
   - `IP Obfuscation Mode` — Generate all known valid representations of an IP
 - 📋 **Per-field copy** and **Copy ALL** support
+- 🏹 **IPv6-mapped IPv4 encodings** with multiple combinations (including bracketed form `[::ffff:x.x.x.x]`)
 
 ---
 
 ## 🛠️ Encoding Techniques
 
 ### XSS Mode
-| Type                  | Example                      |
-|-----------------------|------------------------------|
-| Full-width Unicode    | `<` → `＜`                    |
-| HTML Entities         | `<` → `&lt;`                   |
-| Unicode Escape        | `<` → `\u003c`               |
-| UTF-8 URL (Fullwidth) | `＜` → `%EF%BC%9C`           |
+| Type                    | Example                              |
+|-------------------------|--------------------------------------|
+| Full-width Unicode      | `<` → `＜`                           |
+| HTML Entities (basic)   | `<` → `&lt;`                        |
+| HTML Entities (numeric) | `<` → `&#60;` or `&#x3c;`           |
+| Unicode Escape          | `<` → `\u003c`                     |
+| UTF-8 URL (Fullwidth)  | `＜` → `%EF%BC%9C`                  |
 
 ### SSRF Mode
 | Encoding                           | Example                                 |
@@ -36,6 +38,7 @@
 | Circled with ⨀ Separator           | ⑧①⨀④⨀①②④⨀①⓪                          |
 | Circled with Fullwidth Dots       | ①⑨②．①⑥⑧．①．①                         |
 | Circled (neg ending ⓿)            | 81.4.124.1⓿                             |
+| IPv6 Mixed Encodings               | [::ⓕⓕⓕⓕ:①⑥⑨。②⑤④。⑯⑨。②⑤⑤]       |
 | Rock Dots                         | 81∵4∵124∵10                             |
 | Parenthesized Digits             | ⑻⑴.⑷.⑴⑵⑷.⑴⓪                          |
 | Subscript Digits                 | ₈₁.₄.₁₂₄.₁₀                           |
@@ -68,6 +71,7 @@ Generates all valid representations of an IP address like:
 | Percent Encoding      | `http://%31%39%32...`          |
 | Mixed Hex/Octal       | `http://192.0xa8.0001.0x1`     |
 | Unicode (Circled)     | `http://①⑨②．①⑥⑧．①．①`     |
+| IPv6-mapped IPv4     | `http://[::ffff:192.168.1.1]`     |
 
 ---
 
