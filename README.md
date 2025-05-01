@@ -126,6 +126,7 @@ Paste your payload:
 And instantly get:
 - `＜ｓｃｒｉｐｔ＞ａｌｅｒｔ（１）＜／ｓｃｒｉｐｔ＞`
 - `&lt;script&gt;alert(1)&lt;/script&gt;`
+- `&#60;&#115;&#99;&#114;&#105;&#112;&#116;&#62;alert(1)&#60;/script&#62;`
 - `\u003c\u0073\u0063\u0072...`
 - `%EF%BC%9C%EF%BD%93%EF%BD...`
 
