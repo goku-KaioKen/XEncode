@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import re
 import html
 import urllib.parse
+import itertools
 
 app = Flask(__name__, template_folder='templates')
 
@@ -14,6 +15,9 @@ def to_fullwidth(text, charset=FULLWIDTH_CHARS):
 
 def to_html_entity(text, charset=None):
     return html.escape(text)
+
+def to_full_html_entities(text):
+    return ''.join(f'&#{ord(c)};' for c in text)
 
 def to_unicode_escape(text):
     return ''.join('\\u{:04x}'.format(ord(c)) for c in text)
@@ -188,6 +192,34 @@ def append_replacement_char(text):
     """Appends U+FFFD (�) to the end of the input — useful after domain names."""
     return text + '\uFFFD'
 
+def get_circled_options(octet):
+    per_digit = ''.join(chr(0x2460 + int(d) - 1) if d != '0' else '\u24EA' for d in str(octet))
+    options = [per_digit]
+
+    if 100 <= octet <= 999:
+        first_two = octet // 10
+        last_digit = octet % 10
+        if 10 <= first_two <= 20:
+            compound = chr(0x2469 + first_two - 10)
+            if last_digit != 0:
+                compound += chr(0x2460 + last_digit - 1)
+            options.append(compound)
+    elif 10 <= octet <= 20:
+        options.append(chr(0x2469 + octet - 10))
+
+    return options
+
+def generate_ipv6_mapped_combinations(ipv4):
+    octets = list(map(int, ipv4.split('.')))
+    options = [get_circled_options(o) for o in octets]
+    combinations = list(itertools.product(*options))
+    results = []
+    for combo in combinations:
+        part = '。'.join(combo)  # Use ideographic dot
+        results.append(f"::ⓕⓕⓕⓕ:{part}")
+    return results
+
+
 @app.route('/', methods=['GET'])
 def home():
     return render_template('index.html')
@@ -203,6 +235,7 @@ def encode():
             encoded = {
                 'Full-Width': to_fullwidth(payload),
                 'HTML Entity': to_html_entity(payload),
+                'Full HTML Entities': to_full_html_entities(payload),
                 'Unicode Escape': to_unicode_escape(payload),
                 'Unicode Normalization': to_utf8_urlencode(to_fullwidth(payload))
             }
@@ -227,8 +260,20 @@ def encode():
                 'RTL Override': to_rtl_override(payload),
                 'Homoglyph Swap': to_homoglyph_swap(payload),
                 'Replacement Char Injected (U+FFFD)': to_replacement_char(payload),
-                'Replacement Char Appended (U+FFFD)': append_replacement_char(payload)
+                'Replacement Char Appended (U+FFFD)': append_replacement_char(payload),
             }
+            # Bundle all IPv6 mixed encodings into one block
+            cleaned_payload = payload.strip("[] ")
+            if cleaned_payload.startswith("::ffff:") and re.match(r"::ffff:\d+\.\d+\.\d+\.\d+$", cleaned_payload):
+                ipv4 = cleaned_payload.split(":ffff:")[-1].strip('[] ')
+                octet_parts = [part.strip('[] ') for part in ipv4.split('.')]
+                octets = list(map(int, octet_parts))
+                combos = generate_ipv6_mapped_combinations('.'.join(map(str, octets)))
+                joined_combos = '\n'.join(f'[{c}]' for c in combos)
+                encoded['Mixed IPv6 Mapped IPv4 Variant (Unicode + Circle)'] = joined_combos
+            else:
+                encoded['Mixed IPv6 Mapped IPv4 Variant (Unicode + Circle)'] = "⚠ Not an IPv6-mapped IPv4 address (expected format: ::ffff:x.x.x.x)"
+
         return jsonify(encoded)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

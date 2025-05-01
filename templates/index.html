@@ -14,7 +14,7 @@
             max-height: 200px; overflow-y: auto;
         }
         pre {
-            width: 100%; padding: 15px; font-size: 14px; margin-bottom: 20px;
+            width: 100%; padding: 15px; font-size: 14px; margin-bottom: 5px;
             border-radius: 8px; border: 1px solid #ccc; background: #f4f4f4;
             white-space: pre-wrap; word-break: break-word; overflow-x: auto;
         }
@@ -95,15 +95,25 @@
                     navigator.clipboard.writeText(value).then(() => alert('Copied!'));
                 };
 
-                const pre = document.createElement('pre');
-                pre.id = name;
-                pre.className = 'encoded-text';
-                pre.textContent = value;
-
                 header.appendChild(title);
                 header.appendChild(copyBtn);
                 block.appendChild(header);
-                block.appendChild(pre);
+
+                if (name === 'EasterEgg') {
+                    const pre = document.createElement('pre');
+                    pre.className = 'encoded-text';
+                    pre.innerHTML = value.replace(/\n/g, '<br>');
+                    console.log(name, value);
+                    block.appendChild(pre);
+                } else {
+                    const lines = value.split('\n');
+                    lines.forEach(line => {
+                        const pre = document.createElement('pre');
+                        pre.className = 'encoded-text';
+                        pre.textContent = line;
+                        block.appendChild(pre);
+                    });
+                }
                 resultsDiv.appendChild(block);
             }
         })
@@ -125,7 +135,7 @@
         const hexv1 = `http://${[o1, o2, o3, o4].map(n => '0x' + n.toString(16)).join('.')}`;
         const hexv2 = `http://0x${[o1, o2, o3, o4].map(n => n.toString(16).padStart(2, '0')).join('')}`;
         const hexv3 = `http://0x${o1.toString(16)}.0x${[o2, o3, o4].map(n => n.toString(16).padStart(2, '0')).join('')}`;
-        const hexv4 = `http://0x${o1.toString(16)}.0x${o2.toString(16)}.0x${(o3 << 8 | o4).toString(16).padStart(4, '0')}`
+        const hexv4 = `http://0x${o1.toString(16)}.0x${o2.toString(16)}.0x${(o3 << 8 | o4).toString(16).padStart(4, '0')}`;
 
         const octalv1 = `http://${[o1, o2, o3, o4].map(n => '0' + n.toString(8)).join('.')}`;
         const octalv2 = `http://${[o1, o2, o3, o4].map(n => n.toString(8).padStart(4, '0')).join('.')}`;
@@ -139,8 +149,11 @@
             seg.split('').map(n => n !== '0' ? String.fromCodePoint(0x245F + parseInt(n)) : String.fromCodePoint(0x24EA)).join('')
         ).join('\uFF0E');
 
+        const ipv6Mapped = `http://[::ffff:${ip}]`;
+
         const variants = {
             "Dotted Decimal": `http://${ip}`,
+            "IPv6-mapped IPv4": ipv6Mapped,
             "Class B": `http://${o1}.${o2}.${o3 * 256 + o4}`,
             "Class A": `http://${o1}.${o2 * 256 ** 2 + o3 * 256 + o4}`,
             "DWORD": `http://${dword}`,
@@ -159,13 +172,13 @@
         let html = '';
         for (const [name, value] of Object.entries(variants)) {
             html += `
-              <div class="result-block">
+            <div class="result-block">
                 <div class="result-header">
-                  <h3>${name}:</h3>
-                  <button type="button" class="copy-btn" onclick="navigator.clipboard.writeText('${value}')">Copy</button>
+                <h3>${name}:</h3>
+                <button type="button" class="copy-btn" onclick="navigator.clipboard.writeText('${value}')">Copy</button>
                 </div>
                 <pre class="encoded-text">${value}</pre>
-              </div>
+            </div>
             `;
         }
         resultsDiv.innerHTML = html;
@@ -179,11 +192,6 @@
         });
         encodePayload();
     });
-
-    function copyText(id) {
-        const text = document.getElementById(id).innerText;
-        navigator.clipboard.writeText(text).then(() => alert('Copied!'));
-    }
 
     function copyAll() {
         const elements = document.querySelectorAll('.encoded-text');
